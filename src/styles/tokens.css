@@ -1,0 +1,43 @@
+/* Theme tokens. Light "Clear & Focused" is default; dark "Deep Focus" via [data-theme="dark"]. */
+:root,
+:root[data-theme='light'] {
+  --bg: #F6F4EE;
+  --card: #FFFEFA;
+  --primary: #356B5E;
+  --accent: #356B5E;
+  --text: #242620;
+  --highlight: #EEECE4;
+  --on-primary: #FFFFFF;
+  --muted: #686D65;
+  --card-border: rgba(36, 38, 32, 0.08);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 8px 24px rgba(36, 38, 32, 0.08);
+  --topbar-bg: #F6F4EE;
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  --bg: #111512;
+  --card: #191F1A;
+  --primary: #9BB9A8;
+  --accent: #9BB9A8;
+  --text: #E9EEE9;
+  --highlight: #242B25;
+  --on-primary: #17211B;
+  --muted: #A5AEA5;
+  --card-border: rgba(255, 255, 255, 0.08);
+  --shadow: none;
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.18);
+  --topbar-bg: #111512;
+  color-scheme: dark;
+}
+
+:root {
+  --radius: 8px;
+  --radius-sm: 8px;
+  --touch: 44px;
+  --nav-h: 64px;
+  --top-h: 56px;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --font: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
