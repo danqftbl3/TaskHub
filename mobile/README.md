@@ -13,12 +13,20 @@ npx expo start        # press i (iOS simulator), a (Android), w (web), or scan t
 **Always run Expo commands from inside `mobile/`** (never the repo root, which is the Vite web app). Expo Go must be the current store version (supports SDK 58).
 
 Checks: `npx tsc --noEmit` and `npx expo export` (bundles web/iOS/Android).
+For the rescheduling tests, first install the root project's dependencies, then run from `mobile/`:
+
+```bash
+../node_modules/.bin/esbuild tests/chunker.test.js --bundle --platform=node --format=cjs --outfile=.expo/taskhub-chunker-test.cjs
+node --test .expo/taskhub-chunker-test.cjs
+```
 
 ## What's inside
 
 - **Auth gate**: persisted state picks the Auth stack (Sign Up, Login, Guest / Try Demo) or the bottom tabs.
 - **Schedule**: greeting, streak badge, Sun/Moon toggle, animated progress ring, today's timeline with haptic checkboxes, and an intake modal that splits an assignment into 20-35 minute steps spread before the due date.
+- **Rescheduling**: choose a new start date for an assignment's remaining sessions; completed sessions stay unchanged.
 - **Study Vault**: starts empty. "+ Add notes" (paste, or .txt/.md/.pdf) builds a guide *only from your text*: takeaways, exam alerts (Must know / Likely), key terms with a Deep Explainer, common mistakes, 3D flip flashcards (Got it / Review Again). Missing sections say "Not found in your notes". Cold War content loads only via "Load Demo Sample (Cold War)" or Guest.
+- **Practice quiz**: answer up to five questions from a guide's flashcards, reveal the sourced answer, and assess your own understanding. Progress resets when switching guides.
 - **Tutor AI**: offline, deterministic. Homework requests (including disguised ones) are refused **in code** (`src/services/guardrail.ts`, runs before any answer) with the 3-step reply: context, outline (no finished prose), one Socratic question.
 - **Settings**: profile, System/Light/Dark theme (persisted), stats, in-app feedback (5 stars + comments) that opens the mail composer to danqftbl3@gmail.com, subject `TaskHub App Feedback - [v1.0]` (falls back to a `mailto:` link), Sign Out, Reset Stored Data.
 

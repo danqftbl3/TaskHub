@@ -1,4 +1,4 @@
-import { addDays, daysBetween, dayKey, uid } from './dates';
+import { addDays, daysBetween, dayKey, isValidDay, uid } from './dates';
 import type { Assignment, Step } from './types';
 
 // Deterministic task-type templates: [phase title, weight]
@@ -89,6 +89,12 @@ export const replan = (a: Assignment, today = dayKey()): Assignment => {
   schedule(a.steps, a.due, today);
   return a;
 };
+
+export function reschedule(a: Assignment, from: string, today = dayKey()): Assignment | null {
+  const lastStart = a.due > today ? a.due : today;
+  if (!isValidDay(from) || from < today || from > lastStart || !a.steps.some((step) => !step.done)) return null;
+  return { ...a, rescheduleFrom: from, steps: schedule(a.steps.map((step) => ({ ...step })), a.due, from) };
+}
 
 export const progress = (a: Assignment): number => {
   const t = a.steps.reduce((s, x) => s + x.minutes, 0), d = a.steps.filter((x) => x.done).reduce((s, x) => s + x.minutes, 0);

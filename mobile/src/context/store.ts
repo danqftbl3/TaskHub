@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Assignment, Guide } from '../logic/types';
 import type { ThemePref } from '../theme/tokens';
 import { buildGuide } from '../logic/notes';
-import { makeAssignment, replan, streak } from '../logic/chunker';
+import { makeAssignment, replan, reschedule, streak } from '../logic/chunker';
 import { addDays, dayKey, uid } from '../logic/dates';
 import { COLD_WAR_GUIDE } from '../data/coldwar';
 import { hashPassword, newSalt, validEmail } from '../services/auth';
@@ -30,6 +30,7 @@ interface State {
   setTheme: (t: ThemePref) => void;
   addAssignment: (p: { title: string; description: string; due: string }) => void;
   toggleStep: (aid: string, sid: string) => boolean;
+  rescheduleAssignment: (aid: string, from: string) => boolean;
   addGuide: (p: { title: string; subject: string; text: string; fileName?: string }) => string;
   loadDemo: () => string;
   removeGuide: (id: string) => void;
@@ -95,11 +96,25 @@ export const useStore = create<State>()(
             assignments: d.assignments.map((a) => {
               if (a.id !== aid) return a;
               const steps = a.steps.map((s) => { if (s.id !== sid) return s; nowDone = !s.done; return { ...s, done: nowDone, doneAt: nowDone ? dayKey() : null }; });
-              return replan({ ...a, steps });
+              const today = dayKey();
+              return replan({ ...a, steps }, a.rescheduleFrom && a.rescheduleFrom > today ? a.rescheduleFrom : today);
             }),
           }));
           patch((d) => ({ sessionsDone: d.assignments.reduce((n, a) => n + a.steps.filter((s) => s.done).length, 0) }));
           return nowDone;
+        },
+        rescheduleAssignment(aid, from) {
+          let updated = false;
+          patch((d) => ({
+            assignments: d.assignments.map((a) => {
+              if (a.id !== aid) return a;
+              const next = reschedule(a, from);
+              if (!next) return a;
+              updated = true;
+              return next;
+            }),
+          }));
+          return updated;
         },
         addGuide({ title, subject, text, fileName }) {
           const g = buildGuide({ id: uid(), title: title.trim() || 'Untitled notes', subject: subject.trim() || 'General', text, fileName });

@@ -13,11 +13,14 @@ import { progress } from '../logic/chunker';
 
 export function ScheduleScreen() {
   const t = useTheme(); const user = useUser(); const { assignments, guides } = useData();
-  const { toggleStep, addAssignment } = useStore();
+  const { toggleStep, addAssignment, rescheduleAssignment } = useStore();
   const today = dayKey();
   const [open, setOpen] = useState(false);
   const [f, setF] = useState({ title: '', due: addDays(today, 5), description: '' });
   const [err, setErr] = useState('');
+  const [rescheduling, setRescheduling] = useState<string | null>(null);
+  const [from, setFrom] = useState(today);
+  const [rescheduleError, setRescheduleError] = useState('');
 
   const todays = useMemo(() => assignments.flatMap((a) => a.steps.filter((s) => s.day === today || (s.done && s.doneAt === today)).map((s) => ({ a, s }))), [assignments, today]);
   const done = todays.filter((x) => x.s.done).length;
@@ -69,6 +72,11 @@ export function ScheduleScreen() {
               <Badge tone="muted" label={`Due ${fmtDay(a.due, today)}`} />
             </View>
             <P muted size={13}>{a.steps.filter((s) => s.done).length}/{a.steps.length} steps • {Math.round(progress(a))}% done</P>
+            <Button variant="ghost" label="Reschedule remaining sessions" onPress={() => {
+              setFrom(a.rescheduleFrom && a.rescheduleFrom > today ? a.rescheduleFrom : today);
+              setRescheduleError('');
+              setRescheduling(a.id);
+            }} />
           </Card>
         ))}
 
@@ -86,6 +94,18 @@ export function ScheduleScreen() {
         <Field label="Notes (optional)" value={f.description} onChangeText={(v) => setF({ ...f, description: v })} multiline placeholder="What does the assignment ask for?" />
         {err ? <Text accessibilityRole="alert" style={{ color: t.danger }}>⚠ {err}</Text> : null}
         <Button label="Break it into steps" onPress={save} />
+      </Sheet>
+      <Sheet visible={rescheduling !== null} title="Reschedule sessions" onClose={() => setRescheduling(null)}>
+        <P muted>Choose a start date between today and the assignment due date. Completed sessions stay unchanged.</P>
+        <Field label="Start date (YYYY-MM-DD)" value={from} onChangeText={setFrom} autoCapitalize="none" error={rescheduleError} />
+        <Button label="Reschedule" onPress={() => {
+          if (!rescheduling || !rescheduleAssignment(rescheduling, from)) {
+            setRescheduleError('Choose a valid date for the remaining sessions.');
+            return;
+          }
+          success();
+          setRescheduling(null);
+        }} />
       </Sheet>
     </View>
   );

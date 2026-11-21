@@ -1,0 +1,50 @@
+name: Shared Package Build & Test
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'shared/**'
+      - 'package.json'
+      - 'package-lock.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: Build & Test Shared Package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: shared/package-lock.json
+      - name: Install dependencies
+        working-directory: ./shared
+        run: npm ci
+      - name: Build
+        working-directory: ./shared
+        run: npm run build
+      - name: Verify output
+        working-directory: ./shared
+        run: |
+          test -f dist/index.js
+          test -f dist/index.d.ts
+          test -f dist/logic/chunker.js
+          test -f dist/logic/dates.js
+          test -f dist/logic/notes.js
+          test -f dist/logic/types.js
+          test -f dist/services/guardrail.js
+          test -f dist/services/tutor.js
+          test -f dist/services/auth.js
+          test -f dist/services/extract.js
+      - name: Upload shared dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: shared-dist
+          path: shared/dist/
+          retention-days: 7

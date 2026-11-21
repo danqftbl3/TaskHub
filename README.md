@@ -45,3 +45,7 @@ Copy `.env.example` to `.env` and set `VITE_AI_API_KEY` (optional; never commit 
 ## Mobile app
 
 A native Expo/React Native version lives in [`mobile/`](mobile/README.md) (`cd mobile && npm install && npx expo start`).
+
+## Desktop installers
+
+The desktop app packages the web app with Electron. Run `npm run desktop:mac` on an Apple Silicon Mac for a DMG, or `npm run desktop:win` for an x64 Windows installer. Outputs are written to `release/`. These builds are unsigned; macOS and Windows may warn before opening them. Desktop data is local to the desktop app and is not shared with the browser or mobile app.

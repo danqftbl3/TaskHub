@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { AppHeader } from '../components/Header';
-import { Badge, Button, Card, H, P, styles, tap } from '../components/ui';
+import { Badge, Button, Card, Field, H, P, styles, tap } from '../components/ui';
 import { FlashCard } from '../components/FlashCard';
 import { Sheet } from '../components/Sheet';
 import { useTheme } from '../theme/ThemeProvider';
@@ -11,6 +11,41 @@ import type { Guide, Term } from '../logic/types';
 import { TOUCH } from '../theme/tokens';
 
 const Missing = ({ what }: { what: string }) => <Card><P muted>Not found in your notes: no {what} could be drawn from this material, and TaskHub won't invent any.</P></Card>;
+
+function PracticeQuiz({ guide }: { guide: Guide }) {
+  const [index, setIndex] = useState(0);
+  const [answer, setAnswer] = useState('');
+  const [revealed, setRevealed] = useState(false);
+  const [correct, setCorrect] = useState(0);
+  const cards = guide.cards.slice(0, 5);
+  const card = cards[index];
+  if (!cards.length) return <P muted>Add notes with definitions to make practice questions.</P>;
+  const grade = (understood: boolean) => {
+    if (understood) setCorrect((value) => value + 1);
+    setIndex((value) => value + 1);
+    setAnswer('');
+    setRevealed(false);
+  };
+  return <Card style={{ gap: 12 }}>
+    {card ? <>
+      <P muted>Question {index + 1} of {cards.length}</P>
+      <P>{card.q}</P>
+      <Field label="Your answer" value={answer} onChangeText={setAnswer} multiline editable={!revealed} />
+      {revealed ? <>
+        <P style={{ fontWeight: '700' }}>Answer from your notes</P>
+        <P>{card.a}</P>
+        <P muted size={13}>Source line {card.line}</P>
+        <P muted>How did you do?</P>
+        <Button variant="ghost" label="Review again" onPress={() => grade(false)} />
+        <Button label="Got it" onPress={() => grade(true)} />
+      </> : <Button label="Show answer" onPress={() => setRevealed(true)} />}
+    </> : <>
+      <H size={19}>Quiz complete</H>
+      <P>You marked {correct} of {cards.length} answers as understood.</P>
+      <Button variant="ghost" label="Try again" onPress={() => { setIndex(0); setCorrect(0); setAnswer(''); setRevealed(false); }} />
+    </>}
+  </Card>;
+}
 
 export function VaultScreen() {
   const t = useTheme(); const { guides, cardProgress } = useData();
@@ -83,6 +118,9 @@ export function VaultScreen() {
 
             <H size={19}>Flashcards</H>
             {guide.cards.length ? guide.cards.map((c, i) => <FlashCard key={`${guide.id}-${i}`} card={c} status={cardProgress[`${guide.id}:${i}`]} onMark={(v) => markCard(`${guide.id}:${i}`, v)} />) : <Missing what="flashcards" />}
+
+            <H size={19}>Practice quiz</H>
+            <PracticeQuiz key={guide.id} guide={guide} />
 
             <Button variant="danger" label={guide.demo ? 'Remove sample guide' : 'Delete this guide'} hint="Deletes the guide from this device" onPress={() => removeGuide(guide.id)} />
           </>

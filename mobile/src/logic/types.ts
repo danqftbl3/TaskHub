@@ -1,5 +1,5 @@
 export interface Step { id: string; title: string; minutes: number; day: string | null; done: boolean; doneAt: string | null }
-export interface Assignment { id: string; title: string; description: string; due: string; created: string; steps: Step[] }
+export interface Assignment { id: string; title: string; description: string; due: string; created: string; steps: Step[]; rescheduleFrom?: string }
 export interface Term { term: string; line: number; def: string; mention?: boolean; example: string; analogy: string; academic: string }
 export interface Alert { text: string; emphasis: 1 | 2 | 3; line: number }
 export interface GuideCard { q: string; a: string; line: number }

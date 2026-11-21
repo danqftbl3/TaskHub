@@ -1,0 +1,201 @@
+name: Release All Platforms
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  version:
+    name: Extract Version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.extract.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: extract
+        run: echo "version=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+
+  shared:
+    name: Build Shared Package
+    runs-on: ubuntu-latest
+    needs: version
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: shared/package-lock.json
+      - name: Install & Build
+        working-directory: ./shared
+        run: |
+          npm ci
+          npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shared-dist
+          path: shared/dist/
+          retention-days: 30
+
+  web:
+    name: Build Web
+    runs-on: ubuntu-latest
+    needs: [version, shared]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - uses: actions/download-artifact@v4
+        with:
+          name: shared-dist
+          path: shared/dist/
+      - name: Install & Build
+        run: |
+          npm ci
+          npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: dist/
+          retention-days: 30
+
+  desktop-mac:
+    name: Build macOS (Apple Silicon)
+    runs-on: macos-latest
+    needs: [version, web]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: dist/
+      - name: Install & Build
+        run: |
+          npm ci
+          npm run desktop:mac
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mac-dmg
+          path: release/*.dmg
+          retention-days: 30
+
+  desktop-win:
+    name: Build Windows (x64)
+    runs-on: windows-latest
+    needs: [version, web]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: dist/
+      - name: Install & Build
+        run: |
+          npm ci
+          npm run desktop:win
+      - uses: actions/upload-artifact@v4
+        with:
+          name: win-installer
+          path: release/*.exe
+          retention-days: 30
+
+  mobile-ios:
+    name: Build iOS (EAS)
+    runs-on: macos-latest
+    needs: [version, shared]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - uses: actions/download-artifact@v4
+        with:
+          name: shared-dist
+          path: shared/dist/
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+      - name: Build iOS
+        run: |
+          cd mobile
+          npm ci
+          eas build --platform ios --profile production --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-build
+          path: mobile/
+          retention-days: 30
+
+  mobile-android:
+    name: Build Android (EAS)
+    runs-on: ubuntu-latest
+    needs: [version, shared]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - uses: actions/download-artifact@v4
+        with:
+          name: shared-dist
+          path: shared/dist/
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+      - name: Build Android
+        run: |
+          cd mobile
+          npm ci
+          eas build --platform android --profile production --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-build
+          path: mobile/
+          retention-days: 30
+
+  release:
+    name: Create GitHub Release
+    needs: [version, desktop-mac, desktop-win, web]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: mac-dmg
+          path: release/mac/
+      - uses: actions/download-artifact@v4
+        with:
+          name: win-installer
+          path: release/win/
+      - uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: release/web/
+      - uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.version.outputs.version }}
+          name: TaskHub v${{ needs.version.outputs.version }}
+          files: |
+            release/mac/*.dmg
+            release/win/*.exe
+          generate_release_notes: true
+          draft: false
+          prerelease: false
