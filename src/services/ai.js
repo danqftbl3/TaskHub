@@ -4,8 +4,9 @@ import { isHomeworkRequest, buildRefusal, SYSTEM_PROMPT } from './guardrail.js';
 
 const ENV = import.meta.env || {};
 const KEY = ENV.VITE_AI_API_KEY;
-const MODEL = ENV.VITE_AI_MODEL || 'gpt-4o-mini';
-const BASE = ENV.VITE_AI_BASE_URL || 'https://api.openai.com/v1';
+const MODEL = ENV.VITE_AI_MODEL || 'gemini-1.5-flash';
+const BASE = ENV.VITE_AI_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta';
+const IS_GEMINI = BASE.includes('generativelanguage.googleapis.com');
 
 export const aiMode = () => (KEY ? 'live' : 'offline');
 
@@ -53,6 +54,34 @@ export function offlineTutor(text, guides = [COLD_WAR_GUIDE], context = null) {
 
 async function live(history, text, guides, context) {
   const notes = guides.map((g) => `## ${g.title}\n${g.source.lines.join('\n')}`).join('\n').slice(0, 7000);
+
+  if (IS_GEMINI) {
+    // Gemini API format
+    const systemPrompt = `${SYSTEM_PROMPT}\n${context?.term ? `Current study topic: ${context.term}\n` : ''}\nTEACHER NOTES:\n${notes}`;
+    const contents = [
+      { role: 'user', parts: [{ text: systemPrompt }] },
+      ...history.slice(-6).flatMap((m) => [
+        { role: 'user', parts: [{ text: m.intro || m.text }] },
+        { role: 'model', parts: [{ text: [m.intro || m.text, ...(m.steps || []).map((s) => [s.title, s.body, ...(s.items || []), s.question].filter(Boolean).join(' '))].filter(Boolean).join('\n') }] }
+      ]),
+      { role: 'user', parts: [{ text }] }
+    ];
+    const res = await fetch(`${BASE}/models/${MODEL}:generateContent?key=${KEY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents,
+        generationConfig: { temperature: 0.4, maxOutputTokens: 400 },
+      }),
+    });
+    if (!res.ok) throw new Error(`AI ${res.status}`);
+    const data = await res.json();
+    const out = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+    if (!out) throw new Error('empty');
+    return { text: out, steps: [] };
+  }
+
+  // OpenAI-compatible format (original)
   const res = await fetch(`${BASE}/chat/completions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${KEY}` },
