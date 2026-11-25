@@ -27,6 +27,12 @@
       "expo-mail-composer",
       "expo-status-bar"
     ],
-    "scheme": "taskhub"
+    "scheme": "taskhub",
+    "extra": {
+      "eas": {
+        "projectId": "eecd8bed-9471-46e4-8d21-f09f40780d06"
+      }
+    },
+    "owner": "danqftbl3"
   }
 }
