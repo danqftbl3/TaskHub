@@ -1,6 +1,7 @@
 {
   "cli": {
-    "version": ">= 5.0.0"
+    "version": ">= 5.0.0",
+    "appVersionSource": "remote"
   },
   "build": {
     "development": {
@@ -27,6 +28,13 @@
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "appleId": "danqftbl3@gmail.com"
+      },
+      "android": {
+        "serviceAccountKeyPath": "google-play-service-account.json"
+      }
+    }
   }
 }
