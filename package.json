@@ -1,6 +1,6 @@
 {
   "name": "taskhub",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "private": true,
   "type": "module",
   "main": "desktop/main.cjs",
@@ -25,10 +25,20 @@
   "build": {
     "appId": "com.taskhub.desktop",
     "productName": "TaskHub",
-    "directories": { "output": "release" },
-    "files": ["dist/**/*", "desktop/**/*"],
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "desktop/**/*"
+    ],
     "icon": "mobile/assets/icon.png",
-    "mac": { "target": "dmg", "identity": null },
-    "win": { "target": "nsis" }
+    "mac": {
+      "target": "dmg",
+      "identity": null
+    },
+    "win": {
+      "target": "nsis"
+    }
   }
 }

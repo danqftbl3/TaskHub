@@ -30,10 +30,11 @@ function bumpVersion(version, type) {
 
 const type = process.argv[2] || 'patch';
 
+let newVersion = '';
 for (const file of files) {
   const path = resolve(ROOT, file);
   const pkg = JSON.parse(readFileSync(path, 'utf-8'));
-  const newVersion = bumpVersion(pkg.version, type);
+  newVersion = bumpVersion(pkg.version, type);
   pkg.version = newVersion;
   writeFileSync(path, JSON.stringify(pkg, null, 2) + '\n');
   console.log(`Updated ${file}: ${pkg.version} → ${newVersion}`);
